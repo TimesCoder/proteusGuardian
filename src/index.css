@@ -1,0 +1,17 @@
+/* 1. TIGA BARIS INI WAJIB ADA DI PALING ATAS (JANGAN DIHAPUS) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2. Baru di bawah sini kita boleh custom */
+@layer base {
+  body {
+    @apply bg-dark-900 text-white;
+  }
+}
+
+@layer utilities {
+  .shadow-neon-purple {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.1);
+  }
+}

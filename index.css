@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Styles untuk Scrollbar dan Glow Effect */
+@layer base {
+  body {
+    @apply bg-[#0B0E14] text-white; /* Background default sangat gelap */
+  }
+}
+
+@layer utilities {
+  .shadow-neon-purple {
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.1);
+  }
+}

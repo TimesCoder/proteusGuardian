@@ -1,23 +1,23 @@
-// File: src/pages/Reports.jsx (FINAL - DATA-DRIVEN)
+// File: src/pages/Reports.jsx (FINAL - RESPONSIVE UI)
 
 import React, { useState } from 'react';
-import { FileText, Download, Filter, Calendar, AlertCircle, CheckCircle, Clock, ChevronDown, X, Loader2, Plus } from 'lucide-react';
+import { FileText, Download, Filter, Calendar, AlertCircle, CheckCircle, Clock, ChevronDown, X, Loader2, Plus, Search } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // --- IMPORT HOOK DATA UTAMA ---
 import { useMachineData } from '../hooks/useMachineData';
 
-// --- KOMPONEN KARTU KPI ---
+// --- KOMPONEN KARTU KPI (RESPONSIVE) ---
 const KpiCard = ({ title, value, icon: Icon, color, trend }) => (
-  <div className="bg-dark-800 p-5 rounded-xl border border-dark-700 flex items-center justify-between">
+  <div className="bg-dark-800 p-5 rounded-xl border border-dark-700 flex items-center justify-between hover:border-dark-600 transition-all duration-300 shadow-sm group">
     <div>
-      <p className="text-gray-400 text-xs uppercase font-bold mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-white">{value}</h3>
-      <p className={`text-xs mt-1 ${trend && trend.includes('+') ? 'text-accent-success' : 'text-gray-500'}`}>
+      <p className="text-gray-400 text-[10px] md:text-xs uppercase font-bold mb-1 tracking-wider group-hover:text-gray-300 transition-colors">{title}</p>
+      <h3 className="text-2xl md:text-3xl font-bold text-white mb-1">{value}</h3>
+      <p className={`text-[10px] md:text-xs font-medium ${trend && trend.includes('+') ? 'text-accent-success' : 'text-gray-500'}`}>
         {trend}
       </p>
     </div>
-    <div className={`p-3 rounded-lg bg-dark-900 ${color}`}>
+    <div className={`p-3 rounded-xl bg-dark-900 shadow-inner ${color}`}>
       <Icon size={20} />
     </div>
   </div>
@@ -119,57 +119,60 @@ const Reports = () => {
             },
         });
     }, 1500);
-};
+  };
+
   // --- LOADING / ERROR STATES ---
   if (loading && !dashboardStats) {
     return (
-      <div className="flex justify-center items-center h-full text-white text-lg">
-        <Loader2 className="animate-spin mr-2" /> Loading Reports Data...
+      <div className="flex flex-col justify-center items-center h-[80vh] text-white text-lg gap-3">
+        <Loader2 className="animate-spin text-accent-cyan" size={40} />
+        <p className="animate-pulse">Loading Reports Data...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 bg-red-900/20 text-red-400 border border-red-700 rounded-xl">
-        <h1 className="text-xl font-bold mb-2">Error Loading Data</h1>
+      <div className="p-8 bg-red-900/20 text-red-400 border border-red-700/50 rounded-xl m-4 md:m-8">
+        <h1 className="text-xl font-bold mb-2 flex items-center gap-2"><AlertCircle/> Error Loading Data</h1>
         <p>Gagal mengambil data laporan dari backend API: {error.message || error}</p>
-        <button onClick={refreshData} className="mt-4 px-4 py-2 bg-red-700 hover:bg-red-800 rounded-lg text-white font-bold">Try Again</button>
+        <button onClick={refreshData} className="mt-4 px-4 py-2 bg-red-700 hover:bg-red-800 rounded-lg text-white font-bold transition">Try Again</button>
       </div>
     );
   }
 
   // --- RENDER UTAMA ---
   return (
-    <div className="space-y-6 pb-10 relative">
-          <Toaster 
-         position="top-center" 
-         reverseOrder={false}
-      />
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-10 relative">
+      <Toaster position="top-center" reverseOrder={false} />
+      
+      {/* HEADER RESPONSIVE */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-dark-800/50 md:bg-transparent p-4 md:p-0 rounded-xl md:rounded-none border border-dark-700 md:border-none">
         <div>
-          <h1 className="text-2xl font-bold text-white">System Reports</h1>
-          <p className="text-gray-400 text-sm">Generated insights & logs repository</p>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">System Reports</h1>
+          <p className="text-gray-400 text-xs md:text-sm mt-1">Generated insights & logs repository</p>
         </div>
 
-        <div className="flex gap-3 relative">
+        <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto relative">
           {/* DROPDOWN TANGGAL */}
-          <div className="relative">
+          <div className="relative flex-1 md:flex-none">
             <button
               onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 bg-dark-800 hover:bg-dark-700 text-white text-sm rounded-lg border border-dark-700 transition"
+              className="w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-dark-800 hover:bg-dark-700 text-white text-sm rounded-lg border border-dark-700 transition shadow-sm"
             >
-              <Calendar size={16} /> {selectedRange} <ChevronDown size={14} />
+              <div className="flex items-center gap-2">
+                 <Calendar size={16} className="text-accent-cyan" /> {selectedRange}
+              </div>
+              <ChevronDown size={14} className={`transition-transform ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isDateDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-40 bg-dark-800 border border-dark-600 rounded-lg shadow-xl z-20 overflow-hidden">
+              <div className="absolute top-full right-0 mt-2 w-full md:w-48 bg-dark-800 border border-dark-600 rounded-lg shadow-xl shadow-black/50 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                 {['Last 7 Days', 'Last 30 Days', 'Last 3 Months', 'Year to Date'].map((range) => (
                   <button
                     key={range}
                     onClick={() => { setSelectedRange(range); setIsDateDropdownOpen(false); }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition"
+                    className="block w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition border-b border-dark-700/50 last:border-0"
                   >
                     {range}
                   </button>
@@ -181,57 +184,72 @@ const Reports = () => {
           {/* TOMBOL NEW REPORT */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-accent-cyan text-dark-900 font-bold text-sm rounded-lg hover:bg-cyan-400 transition shadow-neon-cyan active:scale-95"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-accent-cyan text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] active:scale-95 whitespace-nowrap"
           >
-            <Plus size={16} /> Generate New Report
+            <Plus size={18} /> <span className="hidden sm:inline">Generate</span> Report
           </button>
         </div>
       </div>
 
-      {/* KPI STATISTICS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Total Tickets" value={totalReports} icon={FileText} color="text-white" trend="Last 30 Days" />
+      {/* KPI STATISTICS GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <KpiCard title="Total Tickets" value={totalReports} icon={FileText} color="text-gray-200" trend="Last 30 Days" />
         <KpiCard title="Critical Issues" value={criticalIssuesCount} icon={AlertCircle} color="text-accent-danger" trend="Current Active" />
         <KpiCard title="Pending Review" value={pendingReviewCount} icon={Clock} color="text-accent-warning" trend="Tickets Today" />
-        <KpiCard title="Avg RUL" value={`${avgRULDays} days`} icon={CheckCircle} color="text-accent-success" trend="Avg resolution time" />
+        <KpiCard title="Avg RUL" value={`${avgRULDays}d`} icon={CheckCircle} color="text-accent-success" trend="Avg resolution time" />
       </div>
 
-      {/* CHARTS SECTION PLACEHOLDER */}
+      {/* CHARTS SECTION PLACEHOLDER (RESPONSIVE GRID) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-dark-800 p-6 rounded-xl border border-dark-700 flex flex-col items-center justify-center text-center">
-          <h3 className="font-bold text-white mb-2 w-full text-left">Anomaly Trends Over Time</h3>
-          <div className="h-48 w-full flex flex-col items-center justify-center text-gray-500 bg-dark-900/50 rounded-lg border border-dark-600 border-dashed">
-            <AlertCircle className="mb-2 opacity-50" />
-            <p>Grafik historis membutuhkan integrasi Time-Series Database.</p>
-            <p className="text-xs mt-1">(Fitur ini dinonaktifkan di versi Demo)</p>
+        <div className="lg:col-span-2 bg-dark-800 p-6 rounded-xl border border-dark-700 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10"><AlertCircle size={100}/></div>
+          <div className="flex justify-between w-full mb-4 items-center relative z-10">
+             <h3 className="font-bold text-white text-sm md:text-base">Anomaly Trends Over Time</h3>
+             <button className="text-xs text-accent-cyan hover:underline">View Details</button>
+          </div>
+          <div className="h-48 w-full flex flex-col items-center justify-center text-gray-500 bg-dark-900/40 rounded-lg border border-dark-600 border-dashed relative z-10">
+            <AlertCircle className="mb-2 opacity-40" size={32} />
+            <p className="text-sm">Time-Series Database Integration Required</p>
+            <p className="text-[10px] mt-1 text-gray-600 bg-dark-900 px-2 py-0.5 rounded border border-dark-700">(Demo Mode)</p>
           </div>
         </div>
 
-        <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 flex flex-col items-center justify-center text-center">
-          <h3 className="font-bold text-white mb-2 w-full text-left">System Health</h3>
-          <div className="h-48 w-full flex flex-col items-center justify-center text-gray-500 bg-dark-900/50 rounded-lg border border-dark-600 border-dashed">
-            <CheckCircle className="mb-2 opacity-50" />
-            <p>Data distribusi downtime tidak tersedia.</p>
+        <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 flex flex-col items-center justify-center text-center shadow-lg">
+          <div className="w-full flex justify-between items-center mb-4">
+             <h3 className="font-bold text-white text-sm md:text-base">System Health</h3>
+             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+          </div>
+          <div className="h-48 w-full flex flex-col items-center justify-center text-gray-500 bg-dark-900/40 rounded-lg border border-dark-600 border-dashed">
+            <CheckCircle className="mb-2 opacity-40" size={32} />
+            <p className="text-sm">Health Distribution Data</p>
+            <p className="text-[10px] text-gray-600">Unavailable</p>
           </div>
         </div>
       </div>
 
-      {/* TABEL LAPORAN (REAL DATA) */}
-      <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
-        <div className="p-5 border-b border-dark-700 flex justify-between items-center">
-          <h3 className="font-bold text-white">Maintenance Tickets (Reports)</h3>
-          <button className="text-gray-400 hover:text-white" title="Filter"><Filter size={18} /></button>
+      {/* TABEL LAPORAN (SCROLLABLE & STYLED) */}
+      <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden shadow-lg flex flex-col h-full">
+        <div className="p-4 md:p-5 border-b border-dark-700 flex justify-between items-center bg-dark-800/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+              <FileText size={18} className="text-accent-cyan"/>
+              <h3 className="font-bold text-white text-sm md:text-base">Maintenance Reports</h3>
+          </div>
+          <button className="text-gray-400 hover:text-white p-1.5 hover:bg-dark-700 rounded-lg transition" title="Filter">
+              <Filter size={18} />
+          </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-gray-300">
-            <thead className="bg-dark-900/50 text-gray-400 uppercase text-xs">
+        
+        {/* WRAPPER SCROLL HORIZONTAL */}
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-sm text-left text-gray-300 min-w-[800px] md:min-w-full">
+            <thead className="bg-dark-900/80 text-gray-400 uppercase text-[10px] md:text-xs tracking-wider font-semibold">
               <tr>
-                <th className="p-4">ID</th>
-                <th className="p-4">Date</th>
-                <th className="p-4">Machine / Issue</th>
-                <th className="p-4">Risk Level</th>
-                <th className="p-4">RUL</th>
-                <th className="p-4 text-right">Action</th>
+                <th className="p-4 whitespace-nowrap">Ticket ID</th>
+                <th className="p-4 whitespace-nowrap">Date Generated</th>
+                <th className="p-4 whitespace-nowrap">Machine / Issue</th>
+                <th className="p-4 whitespace-nowrap">Risk Level</th>
+                <th className="p-4 whitespace-nowrap">RUL Prediction</th>
+                <th className="p-4 whitespace-nowrap text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-700">
@@ -240,28 +258,36 @@ const Reports = () => {
                 [...allTickets]
                   .sort((a, b) => (b.id - a.id))
                   .map((rpt) => (
-                    <tr key={rpt.id} className="hover:bg-dark-700/50 transition-colors">
-                      <td className="p-4 font-mono text-white">#{rpt.id}</td>
-                      <td className="p-4 text-xs text-gray-400">
-                        {new Date().toLocaleString()}
+                    <tr key={rpt.id} className="hover:bg-dark-700/40 transition-colors group">
+                      <td className="p-4 font-mono text-accent-cyan font-medium">#{rpt.id}</td>
+                      <td className="p-4 text-xs text-gray-400 whitespace-nowrap">
+                        <div className="text-white">{new Date(rpt.timestamp).toLocaleDateString()}</div>
+                        <div className="text-[10px] text-gray-500">{new Date(rpt.timestamp).toLocaleTimeString()}</div>
                       </td>
                       <td className="p-4">
-                        <div className="font-medium text-accent-cyan font-mono">{rpt.machine_id}</div>
-                        <div className="text-xs text-gray-300">{rpt.failure_type}</div>
+                        <div className="font-medium text-white mb-0.5">{rpt.machine_id}</div>
+                        <div className="text-[10px] md:text-xs text-gray-400 truncate max-w-[150px] md:max-w-xs">{rpt.failure_type}</div>
                       </td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${rpt.risk_level === 'CRITICAL' ? 'bg-red-900/20 text-red-400' :
-                          rpt.risk_level === 'WARNING' ? 'bg-yellow-900/20 text-yellow-400' :
-                            'bg-green-900/20 text-green-400'
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold inline-flex items-center gap-1.5 ${
+                            rpt.risk_level === 'CRITICAL' ? 'bg-red-900/20 text-red-400 border border-red-900/30' :
+                            rpt.risk_level === 'WARNING' ? 'bg-yellow-900/20 text-yellow-400 border border-yellow-900/30' :
+                            'bg-green-900/20 text-green-400 border border-green-900/30'
                           }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                              rpt.risk_level === 'CRITICAL' ? 'bg-red-500' :
+                              rpt.risk_level === 'WARNING' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}></span>
                           {rpt.risk_level}
                         </span>
                       </td>
-                      <td className="p-4">{rpt.predicted_rul ? `${rpt.predicted_rul.toFixed(0)}h` : '-'}</td>
+                      <td className="p-4 font-mono text-gray-300">
+                          {rpt.predicted_rul ? `${rpt.predicted_rul.toFixed(0)} h` : '-'}
+                      </td>
                       <td className="p-4 text-right">
                         <button
                           onClick={() => handleDownload(rpt)}
-                          className="p-2 rounded-lg text-accent-cyan hover:bg-dark-600 hover:text-white cursor-pointer transition"
+                          className="p-2 rounded-lg text-gray-400 hover:text-accent-cyan hover:bg-dark-700 border border-transparent hover:border-dark-600 cursor-pointer transition active:scale-95"
                           title="Download Report"
                         >
                           <Download size={18} />
@@ -271,7 +297,8 @@ const Reports = () => {
                   ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                  <td colSpan="6" className="p-12 text-center text-gray-500 flex flex-col items-center justify-center">
+                    <FileText size={40} className="mb-2 opacity-20"/>
                     No maintenance tickets found in the database.
                   </td>
                 </tr>
@@ -283,42 +310,51 @@ const Reports = () => {
 
       {/* MODAL FORM GENERATE REPORT */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-dark-800 border border-dark-600 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">Generate New Report</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
-                <X size={24} />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-dark-800 border border-dark-600 w-full md:w-[500px] max-w-full rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6 border-b border-dark-700 pb-4">
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                  <Plus className="text-accent-cyan" size={20}/> Generate New Report
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white bg-dark-700 p-1.5 rounded-lg transition">
+                <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs text-gray-400 mb-1 uppercase">Report Title</label>
+                <label className="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Report Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Sector B Weekly Analysis"
                   value={newReportTitle}
                   onChange={(e) => setNewReportTitle(e.target.value)}
-                  className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:outline-none"
+                  className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan focus:outline-none text-sm placeholder:text-dark-500 transition-all"
                 />
               </div>
+              
               <div>
-                <label className="block text-xs text-gray-400 mb-1 uppercase">Format</label>
+                <label className="block text-xs text-gray-400 mb-2 uppercase font-bold tracking-wider">Export Format</label>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2 text-sm text-gray-300">
-                    <input type="radio" name="format" defaultChecked className="accent-accent-cyan" /> Text File (.txt)
+                  <label className="flex items-center gap-2 text-sm text-white cursor-pointer p-3 rounded-lg border border-dark-600 bg-dark-900/50 flex-1 hover:border-accent-cyan/50 transition">
+                    <input type="radio" name="format" defaultChecked className="accent-accent-cyan w-4 h-4" /> 
+                    <FileText size={16} className="text-gray-400"/> Text File (.txt)
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-500 cursor-not-allowed">
-                    <input type="radio" name="format" disabled className="accent-accent-cyan" /> PDF (Pro)
+                  <label className="flex items-center gap-2 text-sm text-gray-500 cursor-not-allowed p-3 rounded-lg border border-transparent bg-dark-900/20 flex-1 opacity-50">
+                    <input type="radio" name="format" disabled className="accent-accent-cyan w-4 h-4" /> 
+                    PDF (Pro)
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-8">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-dark-700 hover:bg-dark-600 text-white rounded-xl font-medium transition">Cancel</button>
-              <button onClick={handleGenerate} disabled={isGenerating} className="flex-1 py-3 bg-accent-cyan hover:bg-cyan-400 text-black rounded-xl font-bold transition flex items-center justify-center gap-2">
+            <div className="flex gap-3 mt-8 pt-2">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-transparent border border-dark-600 hover:bg-dark-700 text-gray-300 rounded-xl font-medium transition">Cancel</button>
+              <button 
+                  onClick={handleGenerate} 
+                  disabled={isGenerating} 
+                  className={`flex-1 py-3 text-black rounded-xl font-bold transition flex items-center justify-center gap-2 ${isGenerating ? 'bg-gray-600 cursor-not-allowed' : 'bg-accent-cyan hover:bg-cyan-400 shadow-lg shadow-cyan-900/20'}`}
+              >
                 {isGenerating ? <><Loader2 size={18} className="animate-spin" /> Generating...</> : "Create Report"}
               </button>
             </div>

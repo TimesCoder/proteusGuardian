@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Save, User, Bell, Shield, Globe, Loader2, AlertTriangle, X } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 // --- IMPORT KOMPONEN MLOPS & DEBUGGING ---
 // Pastikan path ini benar sesuai struktur folder Anda
@@ -51,13 +52,26 @@ const Settings = () => {
 
 
   // --- LOGIC HANDLERS ---
-  
   const handleSave = () => {
     setIsSaving(true);
+    
+    // Tampilkan loading toast
+    const loadingToast = toast.loading('Menyimpan pengaturan...');
+
     // Simulasi API Call
     setTimeout(() => {
       setIsSaving(false);
-      alert("✅ Pengaturan berhasil disimpan!");
+      
+      // Ubah loading jadi sukses
+      toast.dismiss(loadingToast);
+      toast.success('Pengaturan berhasil disimpan!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#333',
+          color: '#fff',
+        },
+      });
     }, 1500);
   };
 
@@ -76,6 +90,7 @@ const Settings = () => {
 
   return (
     <div className="space-y-6 pb-10 max-w-5xl mx-auto relative">
+      <Toaster/>
       {/* HEADER PAGE */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -240,7 +255,8 @@ const Settings = () => {
       )}
 
     </div>
-  );
-};
+  
+  );}
+
 
 export default Settings;

@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Activity, Thermometer, Zap, FileText, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'; // Hapus Cpu, tambah Alert/Check
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMachineData } from '../hooks/useMachineData';
+import toast, { Toaster } from 'react-hot-toast';
 
 // --- IMPORT KOMPONEN BARU ---
 import FeedbackForm from '../components/FeedbackForm';
@@ -120,7 +121,7 @@ const MachineDetail = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert(`✅ Laporan Diagnostik untuk ${id} berhasil diunduh!`);
+        toast.success(`Laporan Diagnostik untuk ${id} berhasil diunduh!`);
     };
 
     // 3. Effect Fetch Data
@@ -180,6 +181,10 @@ const MachineDetail = () => {
 
     return (
         <div className="space-y-6 h-full flex flex-col">
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+            />
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">

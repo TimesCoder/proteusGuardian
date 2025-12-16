@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { FileText, Download, Filter, Calendar, AlertCircle, CheckCircle, Clock, ChevronDown, X, Loader2, Plus } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 // --- IMPORT HOOK DATA UTAMA ---
 import { useMachineData } from '../hooks/useMachineData';
@@ -89,18 +90,36 @@ const Reports = () => {
 
   // --- LOGIC GENERATE REPORT (Simulasi) ---
   const handleGenerate = () => {
-    if (!newReportTitle) return alert("Judul laporan wajib diisi!");
+    // 1. Validasi Error
+    if (!newReportTitle.trim()) {
+        return toast.error("Judul laporan wajib diisi!", {
+            style: { background: '#333', color: '#fff' }
+        });
+    }
+
     setIsGenerating(true);
+    
+    // 2. Tampilkan Loading Toast
+    const loadingToast = toast.loading("Sedang menyusun laporan...");
 
     setTimeout(() => {
-      // NOTE: Laporan yang di-generate user TIDAK disimpan di database (hanya simulasi frontend)
-      setIsGenerating(false);
-      setIsModalOpen(false);
-      setNewReportTitle('');
-      alert("✅ Laporan berhasil dibuat (simulasi)!");
-    }, 1500);
-  };
+        setIsGenerating(false);
+        setIsModalOpen(false);
+        setNewReportTitle('');
 
+        // 3. Ubah Loading menjadi Success (Dismiss loading otomatis)
+        toast.success("Laporan berhasil dibuat!", {
+            id: loadingToast, // ID ini penting agar menggantikan loading toast
+            duration: 3000,
+            icon: '✅',
+            style: {
+                background: '#1F2937', // Warna dark mode (sesuai tema dashboardmu)
+                color: '#fff',
+                border: '1px solid #06B6D4' // Aksen cyan
+            },
+        });
+    }, 1500);
+};
   // --- LOADING / ERROR STATES ---
   if (loading && !dashboardStats) {
     return (
@@ -123,6 +142,10 @@ const Reports = () => {
   // --- RENDER UTAMA ---
   return (
     <div className="space-y-6 pb-10 relative">
+          <Toaster 
+         position="top-center" 
+         reverseOrder={false}
+      />
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

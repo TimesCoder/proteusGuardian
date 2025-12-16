@@ -22,14 +22,14 @@ const getMachineStatus = (machineId, tickets, solvedTicketsSet) => {
             return {
                 status: 'CRITICAL',
                 color: 'text-red-400 bg-red-900/20',
-                issue: latestTicket.failure_type,
+                issue: 'Critical Issue',
                 icon: AlertTriangle
             };
         } else if (risk === 'WARNING') {
             return {
                 status: 'WARNING',
                 color: 'text-yellow-400 bg-yellow-900/20',
-                issue: latestTicket.failure_type,
+                issue: 'Warning',
                 icon: AlertTriangle
             };
         }

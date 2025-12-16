@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     AlertTriangle, CheckCircle, Activity, Cpu, Loader2, X, FileText, CheckSquare, Square
 } from 'lucide-react';
-
+import toast, { Toaster } from 'react-hot-toast';
 import { useMachineData } from '../hooks/useMachineData';
 import { CONFIG } from '../config';
 
@@ -98,55 +98,82 @@ const Dashboard = () => {
 
     // 3. LOGIKA CREATE TICKET
     const handleCreateTicket = async () => {
-        if (!newReportTitle || !selectedMachine) {
-            return alert("Judul Laporan dan Mesin harus dipilih!");
-        }
+    // 1. Validasi Input (Ganti alert biasa)
+    if (!newReportTitle || !selectedMachine) {
+        return toast.error("Judul Laporan dan Mesin harus dipilih!", {
+            style: { background: '#333', color: '#fff' }
+        });
+    }
 
-        setIsGenerating(true);
+    setIsGenerating(true);
 
-        const selectedMachineData = overview.find(m => m.machine_id === selectedMachine);
-        if (!selectedMachineData) {
-            setIsGenerating(false);
-            return alert("Error: Data sensor mesin tidak ditemukan.");
-        }
+    // 2. Mulai Loading Toast
+    const loadingToast = toast.loading("Sedang membuat tiket laporan...", {
+        style: { background: '#1F2937', color: '#fff' }
+    });
 
-        const airTempC = kelvinToCelsius(selectedMachineData.air_temp_k);
+    const selectedMachineData = overview.find(m => m.machine_id === selectedMachine);
+    
+    // Validasi Data Mesin
+    if (!selectedMachineData) {
+        setIsGenerating(false);
+        return toast.error("Error: Data sensor mesin tidak ditemukan.", {
+            id: loadingToast, // Menggantikan loading toast
+        });
+    }
 
-        const newTicketData = {
-            machine_id: selectedMachine,
-            air_temp: parseFloat(airTempC.toFixed(1)),
-            rpm: selectedMachineData.rpm,
-            torque: selectedMachineData.torque_nm,
-            failure_type: "MANUAL_REPORT",
-            confidence: 1.0,
-            predicted_rul: 0,
-            risk_level: "WARNING",
-            ai_analysis: `Manual Report: ${newReportTitle}. Sensor: RPM ${selectedMachineData.rpm}, Temp ${airTempC.toFixed(1)}°C.`,
-        };
+    const airTempC = kelvinToCelsius(selectedMachineData.air_temp_k);
 
-        try {
-            const response = await fetch(CREATE_TICKET_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTicketData),
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ detail: 'Unknown API Error' }));
-                throw new Error(errorBody.detail || `HTTP Error ${response.status}`);
-            }
-
-            setIsModalOpen(false);
-            setNewReportTitle('');
-            await refreshData();
-            alert(`✅ Tiket berhasil dibuat!`);
-
-        } catch (err) {
-            alert(`❌ Gagal membuat laporan: ${err.message}`);
-        } finally {
-            setIsGenerating(false);
-        }
+    const newTicketData = {
+        machine_id: selectedMachine,
+        air_temp: parseFloat(airTempC.toFixed(1)),
+        rpm: selectedMachineData.rpm,
+        torque: selectedMachineData.torque_nm,
+        failure_type: "MANUAL_REPORT",
+        confidence: 1.0,
+        predicted_rul: 0,
+        risk_level: "WARNING",
+        ai_analysis: `Manual Report: ${newReportTitle}. Sensor: RPM ${selectedMachineData.rpm}, Temp ${airTempC.toFixed(1)}°C.`,
     };
+
+    try {
+        const response = await fetch(CREATE_TICKET_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTicketData),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({ detail: 'Unknown API Error' }));
+            throw new Error(errorBody.detail || `HTTP Error ${response.status}`);
+        }
+
+        setIsModalOpen(false);
+        setNewReportTitle('');
+        await refreshData();
+
+        // 3. Sukses (Ganti alert sukses)
+        toast.success("Tiket berhasil dibuat!", {
+            id: loadingToast, // ID ini penting agar menggantikan loading toast
+            duration: 3000,
+            icon: '✅',
+            style: {
+                background: '#1F2937',
+                color: '#fff',
+                border: '1px solid #06B6D4' // Aksen Cyan
+            },
+        });
+
+    } catch (err) {
+        // 4. Error (Ganti alert error)
+        toast.error(`Gagal membuat laporan: ${err.message}`, {
+            id: loadingToast, // Menggantikan loading toast
+            duration: 4000
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+};
 
     if (loading && !stats) {
         return (
@@ -168,6 +195,10 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-6 pb-10 relative">
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+            />
             {/* HEADER */}
             <div className="flex justify-between items-center">
                 <div>

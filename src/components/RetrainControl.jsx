@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Loader2, Zap, RefreshCw } from 'lucide-react';
 import { CONFIG } from '../config';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Pastikan endpoint ini sesuai dengan config.js Anda
 const MONOLITH_ADMIN_API_URL = CONFIG.ENDPOINTS?.ADMIN_RETRAIN || `${CONFIG.API_BASE_URL}/api/admin/retrain`;
@@ -12,57 +13,122 @@ const RetrainControl = () => {
     // Dummy count untuk UX, idealnya diambil dari API /api/admin/feedback/count
     const [feedbackCount] = useState(Math.floor(Math.random() * 20) + 5); 
 
-    const handleRetrain = async () => {
-        if (isRetraining) return;
+    const handleRetrain = () => {
+    // 1. Cegah spam klik
+    if (isRetraining) return;
 
-        const confirmation = window.confirm(
-            `⚠️ CONFIRM RETRAIN:\n\nAnda yakin ingin memicu pelatihan ulang model ML? Proses ini akan menggunakan data feedback baru yang terkumpul.`
-        );
+    // 2. Tampilkan Konfirmasi Custom (Bukan window.confirm)
+    toast((t) => (
+        <div className="flex flex-col gap-3 min-w-[300px]">
+            <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                    <h4 className="font-bold text-white">Konfirmasi Retrain</h4>
+                    <p className="text-sm text-gray-400 mt-1">
+                        Proses ini menggunakan data feedback baru. Lanjutkan?
+                    </p>
+                </div>
+            </div>
+            
+            <div className="flex gap-2 justify-end mt-2">
+                <button 
+                    onClick={() => toast.dismiss(t.id)}
+                    className="px-3 py-1.5 text-xs text-gray-300 bg-dark-700 hover:bg-dark-600 rounded transition"
+                >
+                    Batal
+                </button>
+                <button 
+                    onClick={() => {
+                        toast.dismiss(t.id); // Tutup konfirmasi
+                        executeRetrain();    // Jalankan fungsi API
+                    }}
+                    className="px-3 py-1.5 text-xs bg-accent-warning text-black font-bold rounded hover:bg-yellow-500 transition"
+                >
+                    Ya, Mulai Training
+                </button>
+            </div>
+        </div>
+    ), {
+        duration: Infinity, // Agar tidak hilang sendiri sampai diklik
+        position: 'top-center',
+        style: {
+            background: '#1F2937',
+            border: '1px solid #4B5563',
+            color: '#fff',
+        },
+    });
+};
 
-        if (!confirmation) return;
+// --- FUNGSI UTAMA (Dipisahkan agar rapi) ---
+const executeRetrain = async () => {
+    setIsRetraining(true);
+    
+    // Tampilkan Loading Toast
+    const loadingToast = toast.loading("Sedang melatih ulang model...", {
+        style: { background: '#1F2937', color: '#fff' }
+    });
 
-        setIsRetraining(true);
-        setStatus({ message: "Model retraining started...", color: "text-accent-warning" });
+    try {
+        const response = await fetch(MONOLITH_ADMIN_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
 
-        try {
-            const response = await fetch(MONOLITH_ADMIN_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+        const data = await response.json();
+
+        // LOGIC SUKSES
+        if (response.ok && data.status === 'Success') {
+            const sampleCountMatch = data.message?.match(/\d+/);
+            const sampleCount = sampleCountMatch ? sampleCountMatch[0] : 'multiple';
+
+            // Update Toast jadi Sukses
+            toast.success(`Berhasil! Melatih ${sampleCount} sampel baru.`, {
+                id: loadingToast, // Menggantikan loading toast
+                duration: 4000,
+                icon: '🚀',
+            });
+            
+            // Opsional: Update state text di UI jika masih perlu
+            setStatus({ 
+                message: `✅ Success! Anomalies: ${data.anomalies_in_feedback}`, 
+                color: "text-accent-success" 
             });
 
-            const data = await response.json();
-
-            if (response.ok && data.status === 'Success') {
-                // Ekstrak angka sampel secara aman menggunakan Optional Chaining
-                const sampleCountMatch = data.message?.match(/\d+/);
-                const sampleCount = sampleCountMatch ? sampleCountMatch[0] : 'multiple';
-
-                setStatus({
-                    message: `✅ Success! Retrained on ${sampleCount} samples. Anomalies found: ${data.anomalies_in_feedback}.`,
-                    color: "text-accent-success"
-                });
-            } else if (response.ok && data.message?.includes('No feedback')) {
-                setStatus({
-                    message: "⚠️ No new feedback data available to retrain.",
-                    color: "text-yellow-500"
-                });
-            } else {
-                throw new Error(data.detail || "Unknown API Error during retrain.");
-            }
-
-        } catch (error) {
-            setStatus({
-                message: `❌ Retrain Failed: ${error.message}`,
-                color: "text-accent-danger"
+        // LOGIC NO FEEDBACK
+        } else if (response.ok && data.message?.includes('No feedback')) {
+            toast("Tidak ada data feedback baru.", {
+                id: loadingToast,
+                icon: 'ℹ️',
+                style: { background: '#1F2937', color: '#fbbf24' } // Yellow text
             });
-            console.error("Retrain Error:", error);
-        } finally {
-            setIsRetraining(false);
+            
+            setStatus({ message: "⚠️ No new data.", color: "text-yellow-500" });
+
+        // LOGIC API ERROR
+        } else {
+            throw new Error(data.detail || "Respon server tidak valid.");
         }
-    };
+
+    } catch (error) {
+        // Update Toast jadi Error
+        toast.error(`Gagal: ${error.message}`, {
+            id: loadingToast,
+            duration: 4000
+        });
+        console.error("Retrain Error:", error);
+        
+        setStatus({ message: "❌ Retrain Failed", color: "text-accent-danger" });
+    } finally {
+        setIsRetraining(false);
+    }
+};
 
     return (
         <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 h-full flex flex-col justify-between">
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+            />
             <div>
                 <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                     <Zap size={18} className="text-accent-warning" /> MLOps: Model Retraining

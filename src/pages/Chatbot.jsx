@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, AlertTriangle, Volume2, VolumeX, Mic, MicOff, Camera, X } from 'lucide-react';
-
+import toast, { Toaster } from 'react-hot-toast';
 import { CONFIG } from '../config';
 
 const CHAT_AGENT_API_URL = CONFIG.ENDPOINTS.CHAT;
@@ -79,10 +79,21 @@ export const Chatbot = () => {
     };
   }, []);
 
+  const showWarning = () => {
+  toast("Speech recognition tidak didukung di browser ini.", {
+    icon: '⚠️', // Ikon warning manual
+    style: {
+      border: '1px solid #F59E0B', // Border kuning
+      padding: '16px',
+      color: '#F59E0B', // Teks kuning/oranye
+      background: '#1F2937', // Background gelap
+    },
+  });
+};
   // Toggle Speech-to-Text
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert('Speech recognition tidak didukung di browser ini');
+      showWarning();
       return;
     }
 
@@ -199,7 +210,7 @@ export const Chatbot = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('File terlalu besar. Maksimal 5MB.');
+        toast.error('File terlalu besar. Maksimal 5MB.');
         return;
       }
       setSelectedImage(file);
@@ -270,7 +281,10 @@ export const Chatbot = () => {
 
   return (
     <div className="flex flex-col h-full bg-dark-800 rounded-xl border border-dark-700 shadow-2xl text-white">
-
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+      />
       {/* HEADER */}
       <div className="p-3 sm:p-4 border-b border-dark-700 flex items-center justify-between">
         <div className="flex items-center gap-2">

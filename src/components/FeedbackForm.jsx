@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Send, CheckCircle, AlertTriangle, Loader2, Target, Zap } from 'lucide-react';
-
+import toast, { Toaster } from 'react-hot-toast';
 import { CONFIG } from '../config';
 
 // URL Feedback API
@@ -26,57 +26,119 @@ const FeedbackForm = ({ liveSensorData, machineId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState(null); // 'success', 'error', null
 
-    const handleSubmitFeedback = async () => {
-        if (!liveSensorData || !machineId || isLoading) return;
+    const handleSubmitFeedback = () => {
+    // Validasi awal
+    if (!liveSensorData || !machineId || isLoading) return;
 
-        const confirmation = window.confirm(
-            `CONFIRM: Kirim data feedback untuk ${machineId} dengan actual failure: ${actualFailure}?`
-        );
-        if (!confirmation) return;
+    // 1. Tampilkan Toast Konfirmasi Custom (Pengganti window.confirm)
+    toast((t) => (
+        <div className="flex flex-col gap-3 min-w-[320px]">
+            <div className="flex items-start gap-3">
+                <span className="text-2xl">📝</span>
+                <div>
+                    <h4 className="font-bold text-white">Konfirmasi Feedback</h4>
+                    <p className="text-sm text-gray-400 mt-1">
+                        Kirim data untuk mesin <span className="font-mono text-accent-cyan">{machineId}</span>?
+                    </p>
+                    <p className="text-xs text-gray-200 mt-1 bg-dark-900 p-1 rounded border border-dark-700">
+                        Label: <span className="text-white font-bold">{actualFailure}</span>
+                    </p>
+                </div>
+            </div>
+            
+            <div className="flex gap-2 justify-end mt-2">
+                <button 
+                    onClick={() => toast.dismiss(t.id)}
+                    className="px-3 py-1.5 text-xs text-gray-300 bg-dark-700 hover:bg-dark-600 rounded border border-dark-600 transition"
+                >
+                    Batal
+                </button>
+                <button 
+                    onClick={() => {
+                        toast.dismiss(t.id); // Tutup dialog
+                        submitFeedbackToAPI(); // Jalankan fungsi kirim
+                    }}
+                    className="px-3 py-1.5 text-xs bg-accent-cyan text-black font-bold rounded hover:bg-cyan-400 transition"
+                >
+                    Ya, Kirim Data
+                </button>
+            </div>
+        </div>
+    ), {
+        duration: Infinity, // Agar toast tidak hilang sampai user memilih
+        position: 'top-center',
+        style: {
+            background: '#1F2937',
+            border: '1px solid #4B5563',
+            color: '#fff',
+        },
+    });
+};
 
-        setIsLoading(true);
-        setStatus(null);
+// --- Fungsi Terpisah untuk API Call ---
+const submitFeedbackToAPI = async () => {
+    setIsLoading(true);
+    setStatus(null);
 
-        try {
-            // Kita harus mengirim data sensor sesuai skema SensorData di backend
-            const payload = {
-                input_data: {
-                    machine_id: machineId,
-                    air_temp_k: liveSensorData.air_temp_k,
-                    process_temp_k: liveSensorData.process_temp_k,
-                    rpm: liveSensorData.rpm,
-                    torque_nm: liveSensorData.torque_nm,
-                    tool_wear_min: liveSensorData.tool_wear_min,
-                    type: liveSensorData.type,
-                },
-                actual_failure: actualFailure,
-            };
+    // 2. Mulai Loading Toast
+    const loadingToast = toast.loading("Mengirim data feedback...", {
+        style: { background: '#1F2937', color: '#fff' }
+    });
 
-            const response = await fetch(FEEDBACK_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+    try {
+        const payload = {
+            input_data: {
+                machine_id: machineId,
+                air_temp_k: liveSensorData.air_temp_k,
+                process_temp_k: liveSensorData.process_temp_k,
+                rpm: liveSensorData.rpm,
+                torque_nm: liveSensorData.torque_nm,
+                tool_wear_min: liveSensorData.tool_wear_min,
+                type: liveSensorData.type,
+            },
+            actual_failure: actualFailure,
+        };
 
-            if (!response.ok) {
-                const errorBody = await response.json();
-                throw new Error(errorBody.detail || `HTTP Error ${response.status}`);
-            }
+        const response = await fetch(FEEDBACK_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
 
-            setStatus('success');
-            alert(`✅ Feedback berhasil disimpan untuk ${machineId}! Data akan digunakan untuk retrain model.`);
-
-        } catch (error) {
-            setStatus('error');
-            console.error("Feedback Submission Error:", error);
-            alert(`❌ Gagal menyimpan feedback: ${error.message}`);
-        } finally {
-            setIsLoading(false);
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(errorBody.detail || `HTTP Error ${response.status}`);
         }
-    };
+
+        setStatus('success');
+
+        // 3. Ubah Loading jadi SUKSES (Pengganti alert sukses)
+        toast.success("Feedback tersimpan! Model akan belajar dari data ini.", {
+            id: loadingToast,
+            duration: 4000,
+            icon: '✅'
+        });
+
+    } catch (error) {
+        setStatus('error');
+        console.error("Feedback Submission Error:", error);
+
+        // 4. Ubah Loading jadi ERROR (Pengganti alert error)
+        toast.error(`Gagal: ${error.message}`, {
+            id: loadingToast,
+            duration: 4000
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     return (
         <div className="bg-dark-800 p-4 rounded-xl border border-dark-700">
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+            />
             <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                 <Target size={16} className="text-yellow-400" /> MLOps Feedback Loop
             </h3>

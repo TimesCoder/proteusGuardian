@@ -8,7 +8,7 @@ import Chatbot from './pages/Chatbot';
 import MachineDetail from './pages/MachineDetail';
 import Reports from './pages/Reports';
 import MachineFleet from './pages/MachineFleet';
-import Settings from './pages/Settings'; // <--- 1. IMPORT FILE BARU TADI
+import Settings from './pages/Settings'; 
 
 function App() {
   return (
@@ -20,8 +20,6 @@ function App() {
           <Route path="/chat" element={<Chatbot />} />
           <Route path="/machine/:id" element={<MachineDetail />} />
           <Route path="/reports" element={<Reports />} />
-          
-          {/* 2. GANTI BAGIAN INI */}
           <Route path="/settings" element={<Settings />} />
           
         </Routes>

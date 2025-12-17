@@ -77,6 +77,15 @@ const Dashboard = () => {
         }
     }, [overview, selectedMachine]);
 
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            refreshData(); // Panggil fungsi refresh dari hook
+        }, 10000); // 10000 ms = 10 detik
+
+        // Cleanup saat halaman ditutup agar tidak membebani memori
+        return () => clearInterval(intervalId);
+    }, [refreshData]);
+
     // --- HANDLER: TOGGLE SOLVE STATUS ---
     const handleToggleSolve = (e, ticketId) => {
         e.stopPropagation();
@@ -122,10 +131,10 @@ const Dashboard = () => {
             rpm: selectedMachineData.rpm,
             torque: selectedMachineData.torque_nm,
             failure_type: "MANUAL_REPORT",
-            confidence: 1.0,
-            predicted_rul: 0,
+            confidence: 1.0, 
+            predicted_rul: 0.0,
             risk_level: "WARNING",
-            ai_analysis: `Manual Report: ${newReportTitle}. Sensor: RPM ${selectedMachineData.rpm}, Temp ${airTempC.toFixed(1)}°C.`,
+            ai_analysis: `Manual Report: ${newReportTitle}. Sensor Snapshot: RPM ${selectedMachineData.rpm}, Temp ${airTempC.toFixed(1)}°C.`,
         };
 
         try {
@@ -192,17 +201,33 @@ const Dashboard = () => {
 
             {/* HEADER RESPONSIVE */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-dark-800/50 md:bg-transparent p-4 md:p-0 rounded-xl md:rounded-none border border-dark-700 md:border-none">
+
+                {/* BAGIAN KIRI: Judul, Indikator, Subtext */}
                 <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+
+                        {/* Indikator Kedip Hijau */}
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                    </div>
+                    {/* Pindahkan <p> ke sini agar rapi di bawah judul (opsional, tapi lebih estetik) */}
                     <p className="text-gray-400 text-xs md:text-sm mt-1">Real-time monitoring Plant A-12</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="w-full md:w-auto px-4 py-2.5 bg-accent-cyan text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] flex justify-center items-center gap-2"
-                >
-                    <FileText size={16} /> New Report
-                </button>
+
+                {/* BAGIAN KANAN: Tombol */}
+                <div>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full md:w-auto px-4 py-2.5 bg-accent-cyan text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] flex justify-center items-center gap-2"
+                    >
+                        <FileText size={16} /> New Report
+                    </button>
+                </div>
             </div>
+
 
             {/* KPI CARDS GRID RESPONSIVE */}
             {/* Mobile: 1 kolom (atau 2 jika layar agak lebar), Tablet: 2 kolom, Desktop: 4 kolom */}
@@ -246,7 +271,7 @@ const Dashboard = () => {
                         <h3 className="font-bold text-white text-sm md:text-base">Recent Anomalies</h3>
                         <span className="text-xs text-gray-500 bg-dark-900 px-2 py-1 rounded">Last 7 items</span>
                     </div>
-                    
+
                     {/* WRAPPER SCROLL UNTUK MOBILE */}
                     <div className="overflow-x-auto w-full">
                         <table className="w-full text-sm text-left text-gray-300 min-w-[600px] md:min-w-full">
@@ -262,18 +287,17 @@ const Dashboard = () => {
                             </thead>
                             <tbody className="divide-y divide-dark-700">
                                 {recentAnomalies.length > 0 ? (
-                                    recentAnomalies.map((row) => {
+                                    recentAnomalies.map((row, index) => {
                                         const isSolved = solvedTickets.has(row.id) || row.status === 'Resolved';
                                         return (
                                             <tr
                                                 key={row.id || Math.random()}
                                                 onClick={() => navigate(`/machine/${row.machine_id}`)}
-                                                className={`transition-colors cursor-pointer group ${
-                                                    isSolved ? 'bg-green-900/5 hover:bg-green-900/10' : 'hover:bg-dark-700/50'
-                                                }`}
+                                                className={`transition-colors cursor-pointer group ${isSolved ? 'bg-green-900/5 hover:bg-green-900/10' : 'hover:bg-dark-700/50'
+                                                    }`}
                                             >
                                                 <td className="px-4 py-3 md:px-6 md:py-4 font-mono text-white text-xs md:text-sm">
-                                                    #{row.id}
+                                                    #{index + 1}
                                                 </td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4 font-mono text-accent-cyan font-semibold text-xs md:text-sm">
                                                     {row.machine_id}
@@ -283,16 +307,15 @@ const Dashboard = () => {
                                                         <span className={isSolved ? "line-through text-gray-600" : "text-white"}>
                                                             {row.failure_type}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-500">{new Date(row.timestamp).toLocaleDateString()}</span>
+                                                        <span className="text-[12px] text-gray-200">{new Date(row.timestamp).toLocaleDateString()}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4">
                                                     {!isSolved ? (
-                                                        <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold inline-block ${
-                                                            row.risk_level === 'CRITICAL' ? 'text-red-400 bg-red-900/20 border border-red-900/30' :
+                                                        <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold inline-block ${row.risk_level === 'CRITICAL' ? 'text-red-400 bg-red-900/20 border border-red-900/30' :
                                                             row.risk_level === 'WARNING' ? 'text-yellow-400 bg-yellow-900/20 border border-yellow-900/30' :
-                                                            'text-green-400 bg-green-900/20 border border-green-900/30'
-                                                        }`}>
+                                                                'text-green-400 bg-green-900/20 border border-green-900/30'
+                                                            }`}>
                                                             {row.risk_level}
                                                         </span>
                                                     ) : (
@@ -307,11 +330,10 @@ const Dashboard = () => {
                                                 <td className="px-4 py-3 md:px-6 md:py-4 text-center">
                                                     <button
                                                         onClick={(e) => handleToggleSolve(e, row.id)}
-                                                        className={`p-2 rounded-lg transition-all active:scale-90 ${
-                                                            isSolved
-                                                                ? 'bg-accent-success text-black hover:bg-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                                                                : 'bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-white border border-dark-600'
-                                                        }`}
+                                                        className={`p-2 rounded-lg transition-all active:scale-90 ${isSolved
+                                                            ? 'bg-accent-success text-black hover:bg-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)]'
+                                                            : 'bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-white border border-dark-600'
+                                                            }`}
                                                     >
                                                         {isSolved ? <CheckSquare size={18} /> : <Square size={18} />}
                                                     </button>
@@ -335,7 +357,7 @@ const Dashboard = () => {
                 {/* Kolom Kanan: Rekomendasi & Info */}
                 <div className="flex flex-col gap-6">
                     <MaintenanceRecommendation />
-                    
+
                     <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 shadow-lg">
                         <div className="flex items-center gap-2 mb-4">
                             <Activity className="text-gray-400" size={20} />
@@ -354,82 +376,84 @@ const Dashboard = () => {
             </div>
 
             {/* MODAL RESPONSIVE */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-dark-800 border border-dark-600 w-full md:w-[500px] max-w-full rounded-2xl p-5 md:p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-dark-700">
-                            <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                                <FileText className="text-accent-cyan" size={20}/> Create Manual Ticket
-                            </h2>
-                            <button 
-                                onClick={() => setIsModalOpen(false)} 
-                                className="text-gray-400 hover:text-white bg-dark-700 p-1.5 rounded-lg transition"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                        <div className="bg-dark-800 border border-dark-600 w-full md:w-[500px] max-w-full rounded-2xl p-5 md:p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                            <div className="flex justify-between items-center mb-6 pb-4 border-b border-dark-700">
+                                <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                                    <FileText className="text-accent-cyan" size={20} /> Create Manual Ticket
+                                </h2>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="text-gray-400 hover:text-white bg-dark-700 p-1.5 rounded-lg transition"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Select Machine ID</label>
-                                <div className="relative">
-                                    <select
-                                        value={selectedMachine}
-                                        onChange={(e) => setSelectedMachine(e.target.value)}
-                                        className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan focus:outline-none text-sm appearance-none"
-                                    >
-                                        {overview.map(m => (
-                                            <option key={m.machine_id} value={m.machine_id}>{m.machine_id} (Type: {m.type})</option>
-                                        ))}
-                                        {overview.length === 0 && <option>No Machines Available</option>}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
-                                        <Menu size={14} className="rotate-90" />
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Select Machine ID</label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedMachine}
+                                            onChange={(e) => setSelectedMachine(e.target.value)}
+                                            className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan focus:outline-none text-sm appearance-none"
+                                        >
+                                            {overview.map(m => (
+                                                <option key={m.machine_id} value={m.machine_id}>{m.machine_id} (Type: {m.type})</option>
+                                            ))}
+                                            {overview.length === 0 && <option>No Machines Available</option>}
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
+                                            <Menu size={14} className="rotate-90" />
+                                        </div>
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Report Title / Issue</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Unusual Vibration noticed during shift..."
+                                        value={newReportTitle}
+                                        onChange={(e) => setNewReportTitle(e.target.value)}
+                                        className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan focus:outline-none text-sm placeholder:text-gray-600"
+                                    />
+                                </div>
+                                <div className="bg-blue-900/20 border border-blue-900/30 p-3 rounded-lg">
+                                    <p className="text-xs text-blue-200 flex gap-2">
+                                        <Activity size={14} className="shrink-0 mt-0.5" />
+                                        Note: Creating a manual ticket logs the current live sensor data as a snapshot for AI analysis.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Report Title / Issue</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Unusual Vibration noticed during shift..."
-                                    value={newReportTitle}
-                                    onChange={(e) => setNewReportTitle(e.target.value)}
-                                    className="w-full bg-dark-900 border border-dark-600 rounded-lg p-3 text-white focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan focus:outline-none text-sm placeholder:text-gray-600"
-                                />
-                            </div>
-                            <div className="bg-blue-900/20 border border-blue-900/30 p-3 rounded-lg">
-                                <p className="text-xs text-blue-200 flex gap-2">
-                                    <Activity size={14} className="shrink-0 mt-0.5" />
-                                    Note: Creating a manual ticket logs the current live sensor data as a snapshot for AI analysis.
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className="flex gap-3 mt-8 pt-2">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                disabled={isGenerating}
-                                className="flex-1 py-3 bg-transparent border border-dark-600 hover:bg-dark-700 text-gray-300 rounded-xl font-medium transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCreateTicket}
-                                disabled={isGenerating || !selectedMachine}
-                                className={`flex-1 py-3 text-black rounded-xl font-bold transition flex items-center justify-center gap-2 ${isGenerating || !selectedMachine ? 'bg-gray-600 cursor-not-allowed opacity-70' : 'bg-accent-cyan hover:bg-cyan-400 shadow-lg shadow-cyan-900/20'}`}
-                            >
-                                {isGenerating ? (
-                                    <> <Loader2 size={18} className="animate-spin" /> Saving... </>
-                                ) : (
-                                    <> <FileText size={18} /> Create Ticket </>
-                                )}
-                            </button>
+                            <div className="flex gap-3 mt-8 pt-2">
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    disabled={isGenerating}
+                                    className="flex-1 py-3 bg-transparent border border-dark-600 hover:bg-dark-700 text-gray-300 rounded-xl font-medium transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateTicket}
+                                    disabled={isGenerating || !selectedMachine}
+                                    className={`flex-1 py-3 text-black rounded-xl font-bold transition flex items-center justify-center gap-2 ${isGenerating || !selectedMachine ? 'bg-gray-600 cursor-not-allowed opacity-70' : 'bg-accent-cyan hover:bg-cyan-400 shadow-lg shadow-cyan-900/20'}`}
+                                >
+                                    {isGenerating ? (
+                                        <> <Loader2 size={18} className="animate-spin" /> Saving... </>
+                                    ) : (
+                                        <> <FileText size={18} /> Create Ticket </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

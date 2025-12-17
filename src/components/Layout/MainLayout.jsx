@@ -190,7 +190,7 @@ const NavItem = ({ to, icon: Icon, label, isActive, collapsed }) => {
 
       {/* Tooltip Hover saat Collapsed */}
       {collapsed && (
-        <div className="absolute left-14 bg-dark-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-dark-600 shadow-xl">
+        <div className="absolute left-14 bg-dark-700 text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-dark-600 shadow-xl">
           {label}
         </div>
       )}

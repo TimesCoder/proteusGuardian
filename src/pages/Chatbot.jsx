@@ -5,10 +5,10 @@ import { CONFIG } from '../config';
 
 const CHAT_AGENT_API_URL = CONFIG.ENDPOINTS.CHAT;
 
-const initialMessages = [
+let globalChatHistory = [
   {
     type: 'ai',
-    content: 'Halo! Saya adalah Predictive Maintenance Copilot Anda. Saya siap membantu memantau kesehatan mesin.'
+    content: 'Halo! Saya adalah Proteus Guardian Anda. Saya siap membantu memantau kesehatan mesin.'
   }
 ];
 
@@ -27,7 +27,7 @@ const cleanMarkdown = (text) => {
 
 export const Chatbot = () => {
   // --- STATE MANAGEMENT ---
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState(globalChatHistory);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
@@ -39,6 +39,10 @@ export const Chatbot = () => {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    globalChatHistory = messages;
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

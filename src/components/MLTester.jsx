@@ -97,7 +97,7 @@ const MLTester = () => {
     return (
         <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 h-full">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Zap size={18} className="text-accent-cyan" /> ML Inference Tester
+                <Zap size={18} className="text-accent-cyan" /> ML Inference
             </h3>
 
             <p className="text-sm text-gray-400 mb-6">

@@ -28,7 +28,13 @@ const MACHINE_IMAGES = {
     "M-002": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Horizontal.jpg",
     "A-101": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Vertikal.jpg",
     "B-202": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Universal.jpg",
-    "C-303": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Omniversal.jpg"
+    "C-303": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Omniversal.jpg",
+    "D-404": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Tangan.jpg",
+    "E-505": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Horizontal.jpg",
+    "F-606": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Vertikal.jpg",
+    "G-707": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Universal.jpg",
+    "H-808": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Omniversal.jpg",
+    "I-909": "https://i0.wp.com/pengelasan.net/wp-content/uploads/2020/01/Jenis-Mesin-Frais-Tangan.jpg"
 };
 
 // Fallback image

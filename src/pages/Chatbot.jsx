@@ -217,7 +217,7 @@ export const Chatbot = () => {
             )}
           </div>
           <div>
-            <h3 className="font-bold text-sm md:text-base text-white">Copilot Assistant</h3>
+            <h3 className="font-bold text-sm md:text-base text-white">Proteus Guardian Assistant</h3>
             <p className="text-xs text-accent-cyan/80 font-mono">
                 {isThinking ? 'Processing...' : 'Online & Ready'}
             </p>
@@ -234,7 +234,7 @@ export const Chatbot = () => {
       </div>
 
       {/* CHAT AREA (Scrollable) */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-gradient-to-b from-dark-800 to-dark-900 min-h-0">
+      <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-6 bg-gradient-to-b from-dark-800 to-dark-900 min-h-0">
         {messages.map((msg, index) => (
           <div key={index} className={`flex ${msg.type === 'human' ? 'justify-end' : 'justify-start'}`}>
             

@@ -5,7 +5,7 @@ import { Play, Loader2, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
 import { CONFIG } from '../config';
 
 // Pastikan endpoint ini sesuai dengan config.js Anda
-const PREDICT_API_URL = CONFIG.ENDPOINTS?.ML_PREDICT || `${CONFIG.API_BASE_URL}/api/ml/predict`;
+const PREDICT_API_URL = CONFIG.ENDPOINTS?.ML_PREDICT || `${CONFIG.API_BASE_URL}/predict`;
 
 const initialInput = {
     machine_id: 'TEST-001',
@@ -144,6 +144,14 @@ const MLTester = () => {
                     
                     <div className="space-y-1 text-xs">
                         <div className="flex justify-between">
+                            <span className="text-gray-400">Machine Id:</span>
+                            <span className="text-white font-medium">{prediction.machine_id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-400">Failure Type:</span>
+                            <span className="text-white font-medium">{prediction.failure_type}</span>
+                        </div>
+                        <div className="flex justify-between">
                             <span className="text-gray-400">Risk Probability:</span>
                             <span className={`font-mono font-bold ${riskColorClass}`}>
                                 {(prediction.risk_probability * 100).toFixed(1)}%
@@ -153,10 +161,18 @@ const MLTester = () => {
                             <span className="text-gray-400">Condition:</span>
                             <span className="text-white font-medium">{prediction.condition}</span>
                         </div>
+                        {/* Technical Recommended diambil dari Failur type */}
+                        <div className="flex justify-between">
+                            <span className="text-gray-400">Technical Recommended:</span>
+                            <span className="text-white font-medium">{prediction.failure_type === 'No Failure' ? 'No Action Needed' : 'Schedule Maintenance'}</span>
                     </div>
+                    <div className="flex justify-between">
+                            <span className="text-gray-400">Root Cause:</span>
+                            <span className="text-white font-medium">{prediction.root_cause}</span>
+                        </div>
                 </div>
+            </div>
             )}
-
             {/* Output Error */}
             {error && (
                 <div className="mt-6 p-3 bg-red-900/20 border border-red-900/50 text-red-400 rounded-lg text-sm flex items-center gap-2 animate-in fade-in">

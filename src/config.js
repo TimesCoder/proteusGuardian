@@ -21,7 +21,7 @@ export const CONFIG = {
         // Endpoint Machine Learning (Inference Tester)
         // Digunakan di MLTester.jsx
         ML_PREDICT: `${API_BASE_URL}/api/ml/predict`,
-
+        ML_PREDICTs: `${API_BASE_URL}/predict`,
         // --- ADMIN & MLOPS ENDPOINTS ---
         // Endpoint untuk mengirim Feedback manual (Create Ticket Labeling)
         // Digunakan di FeedbackForm.jsx

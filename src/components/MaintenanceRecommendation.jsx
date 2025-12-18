@@ -1,144 +1,174 @@
+// File: src/components/MaintenanceRecommendation.jsx
+
 import React from 'react';
-import { Wrench, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Wrench, Loader2, AlertTriangle, CheckCircle, Activity, Clock, Zap } from 'lucide-react';
 import { useMachineData } from '../hooks/useMachineData';
+
+// --- UTILITY: MAPPING KOMPONEN DINAMIS ---
+const mapComponentToFailure = (failureType) => {
+    const type = failureType?.toLowerCase() || '';
+
+    if (type.includes('power')) return 'Power Supply / PSU';
+    if (type.includes('tool') || type.includes('wear')) return 'Cutting Tool / Drill Bit';
+    if (type.includes('overstrain') || type.includes('torque')) return 'Spindle / Gearbox';
+    if (type.includes('heat') || type.includes('dissipation') || type.includes('overheat')) return 'Cooling System / Fan';
+    if (type.includes('random')) return 'Software / Controller';
+    
+    return 'Main Motor Assembly';
+};
 
 // --- UTILITY: MENCARI TIKET PRIORITAS TERTINGGI ---
 const findTopRecommendation = (tickets) => {
-    // 1. Cek jika tiket kosong
-    if (!tickets || !Array.isArray(tickets) || tickets.length === 0) {
-        return null;
-    }
+    if (!tickets || !Array.isArray(tickets) || tickets.length === 0) return null;
 
-    // 2. Filter hanya yang Critical atau Warning
     const urgentTickets = tickets.filter(t => 
         t.risk_level === 'CRITICAL' || t.risk_level === 'WARNING'
     );
 
-    if (urgentTickets.length === 0) {
-        return null;
-    }
+    if (urgentTickets.length === 0) return null;
 
-    // 3. Sorting: Prioritas Critical > Warning, lalu berdasarkan Waktu Terbaru
     urgentTickets.sort((a, b) => {
         const riskPriority = { 'CRITICAL': 2, 'WARNING': 1 };
-        
-        // Bandingkan Risk Level dulu
         if (riskPriority[a.risk_level] !== riskPriority[b.risk_level]) {
-            // Descending (2 > 1)
             return riskPriority[b.risk_level] - riskPriority[a.risk_level];
         }
-        
-        // Jika Risk sama, bandingkan timestamp (Terbaru di atas)
         return new Date(b.timestamp) - new Date(a.timestamp);
     });
 
-    // Ambil yang paling atas
     return urgentTickets[0];
 };
 
 const MaintenanceRecommendation = () => {
     const { data, loading, error } = useMachineData();
-
-    // Safety check: Pastikan mengambil array tickets dari object data
     const tickets = data?.tickets || [];
 
+    // --- LOADING STATE ---
     if (loading) {
         return (
-            <div className="bg-dark-800 p-6 rounded-xl flex items-center justify-center border border-dark-700 h-full min-h-[300px]">
+            <div className="bg-dark-800 p-6 rounded-xl flex items-center justify-center border border-dark-700 min-h-[300px]">
                 <Loader2 className="animate-spin text-accent-cyan mr-2" />
                 <span className="text-gray-400">Menganalisis Data...</span>
             </div>
         );
     }
 
+    // --- ERROR STATE ---
     if (error) {
         return (
-            <div className="bg-red-900/10 text-red-400 p-6 rounded-xl border border-red-700 flex flex-col items-center justify-center h-full text-center">
+            <div className="bg-red-900/10 text-red-400 p-6 rounded-xl border border-red-700 flex flex-col items-center justify-center min-h-[200px] text-center">
                 <AlertTriangle size={32} className="mb-2" />
-                <p>Gagal memuat data rekomendasi.</p>
+                <p>Gagal memuat rekomendasi.</p>
             </div>
         );
     }
 
     const topRec = findTopRecommendation(tickets);
 
-    // --- TAMPILAN JIKA AMAN (TIDAK ADA REKOMENDASI) ---
+    // --- SAFE STATE (TIDAK ADA ISU) ---
     if (!topRec) {
         return (
-            <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 h-full flex flex-col items-center justify-center text-center">
-                <div className="p-4 bg-green-900/20 rounded-full mb-4">
+            <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 flex flex-col items-center justify-center text-center min-h-[300px]">
+                <div className="p-4 bg-green-900/20 rounded-full mb-4 animate-pulse">
                     <CheckCircle className="text-accent-success" size={48} />
                 </div>
                 <h3 className="text-xl font-bold text-white">Sistem Optimal</h3>
-                <p className="text-gray-400 text-sm mt-2">Tidak ada anomali kritis yang memerlukan tindakan segera.</p>
+                <p className="text-gray-400 text-sm mt-2 max-w-[250px]">
+                    Semua sensor dalam ambang batas normal. Tidak ada tindakan diperlukan.
+                </p>
             </div>
         );
     }
 
-    // Persiapan Teks Rekomendasi
-    // Prioritaskan ai_analysis, lalu recommendation, lalu default text
-    const recommendationText = topRec.ai_analysis || topRec.recommendation || "Lakukan inspeksi mendalam pada komponen terkait.";
+    // Persiapan Data
+    const recommendationText = topRec.recommendation || "Terdeteksi anomali pada sensor. Lakukan pengecekan manual segera.";
+    const affectedComponent = mapComponentToFailure(topRec.failure_type);
+    
+    // Format tanggal agar lebih pendek dan rapi (menghindari wrapping berlebih)
+    const formattedDate = new Date(topRec.timestamp).toLocaleString('id-ID', {
+        day: 'numeric', month: 'short', year: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+    });
 
-    // --- TAMPILAN JIKA ADA REKOMENDASI (CRITICAL/WARNING) ---
+    // --- WARNING/CRITICAL STATE ---
     return (
-        <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 shadow-xl h-full flex flex-col">
+        // HAPUS 'h-full' dan GANTI dengan 'h-auto' agar tinggi menyesuaikan konten
+        <div className="bg-dark-800 rounded-xl border border-dark-700 shadow-xl h-auto flex flex-col w-full">
             
-            {/* Header Icon */}
-            <div className="flex flex-col items-center justify-center mb-6">
-                <div className={`p-3 rounded-full ${topRec.risk_level === 'CRITICAL' ? 'bg-red-900/30' : 'bg-accent-purple/20'}`}>
-                    <Wrench className={`${topRec.risk_level === 'CRITICAL' ? 'text-red-500' : 'text-accent-purple'}`} size={32} />
+            {/* 1. Header Section */}
+            <div className="p-5 flex flex-col items-center text-center shrink-0 border-b border-dark-700/50">
+                <div className={`p-3 rounded-full mb-2 transition-transform hover:scale-110 ${
+                    topRec.risk_level === 'CRITICAL' ? 'bg-red-900/30 shadow-[0_0_15px_rgba(220,38,38,0.3)]' : 'bg-yellow-900/30 shadow-[0_0_15px_rgba(202,138,4,0.3)]'
+                }`}>
+                    <Wrench className={`${topRec.risk_level === 'CRITICAL' ? 'text-red-500' : 'text-yellow-500'}`} size={28} />
                 </div>
-                <h2 className="text-2xl font-bold text-white mt-3 text-center">Tindakan Diperlukan</h2>
-                <p className="text-sm text-gray-400">Berdasarkan analisis prediktif AI</p>
+                <h2 className="text-xl font-bold text-white">Tindakan Diperlukan</h2>
+                
+                {/* Badge dipindah ke sini agar lebih rapi */}
+                <span className={`mt-2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    topRec.risk_level === 'CRITICAL' 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-yellow-500 text-black'
+                }`}>
+                    {topRec.risk_level}
+                </span>
             </div>
 
-            {/* Content Box */}
-            <div className="bg-dark-900 p-5 rounded-xl relative border border-dark-700 flex-1 flex flex-col justify-center">
-
-                {/* Badge Status Risiko */}
-                <div className="absolute top-4 right-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                        topRec.risk_level === 'CRITICAL' ? 'bg-red-600 text-white shadow-lg shadow-red-900/50' : 'bg-yellow-600 text-black shadow-lg shadow-yellow-900/50'
-                    }`}>
-                        {topRec.risk_level}
-                    </span>
-                </div>
-
-                <h3 className="font-bold text-lg text-white mb-5 pt-2 border-b border-dark-700 pb-2">
-                    Prioritas Utama
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Baris 1: Identitas */}
-                    <RecDetail title="Mesin ID" value={topRec.machine_id} highlight />
-                    <RecDetail title="Jenis Kegagalan" value={topRec.failure_type} />
-                    
-                    {/* Baris 2: Komponen & Waktu */}
-                    <RecDetail title="Waktu Deteksi" value={new Date(topRec.timestamp).toLocaleDateString()} />
-                    <RecDetail title="Komponen (Prediksi)" value="Motor / Bearing" />
-
-                    {/* Baris 3: Rekomendasi (FULL WIDTH agar terbaca) */}
-                    <div className="col-span-2 mt-2">
-                        <div className="p-3 bg-dark-700 rounded-lg border border-dark-600">
-                            <p className="text-xs text-accent-cyan uppercase font-bold mb-2 flex items-center gap-2">
-                                <Wrench size={12} /> Rekomendasi AI
-                            </p>
-                            <p className="text-sm text-gray-200 leading-relaxed">
-                                {recommendationText}
-                            </p>
+            {/* 2. Content Box */}
+            <div className="flex-1 bg-dark-900/30 p-4 md:p-5 flex flex-col gap-4">
+                
+                {/* Info Utama: ID Mesin & Failure */}
+                <div className="flex items-center justify-between bg-dark-800 p-3 rounded-lg border border-dark-600">
+                    <div className="flex items-center gap-2">
+                        <Activity className="text-gray-500" size={16} />
+                        <div>
+                            <p className="text-[10px] text-gray-400 uppercase font-bold">Mesin ID</p>
+                            <p className="text-white font-bold text-sm">{topRec.machine_id}</p>
                         </div>
                     </div>
+                    <div className="text-right">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold">Failure Type</p>
+                        <p className="text-white font-bold text-sm">{topRec.failure_type}</p>
+                    </div>
+                </div>
+
+                {/* Grid Details (Waktu & Komponen) */}
+                <div className="grid grid-cols-2 gap-3">
+                    <RecDetail 
+                        icon={<Clock size={14} className="text-gray-400"/>}
+                        title="Waktu Deteksi" 
+                        value={formattedDate} 
+                    />
+                    <RecDetail 
+                        icon={<Zap size={14} className="text-gray-400"/>}
+                        title="Komponen" 
+                        value={affectedComponent} 
+                        highlight 
+                    />
+                </div>
+
+                {/* AI Recommendation Box */}
+                <div className="bg-dark-800 p-4 rounded-lg border border-dark-600">
+                    <p className="text-xs text-accent-cyan uppercase font-bold mb-2 flex items-center gap-2">
+                        <Wrench size={14} /> Langkah Perbaikan
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed break-words">
+                        {recommendationText}
+                    </p>
                 </div>
             </div>
         </div>
     );
 };
 
-// Sub-komponen Detail Kecil
-const RecDetail = ({ title, value, highlight = false }) => (
-    <div className="p-3 bg-dark-700 rounded-lg border border-dark-800">
-        <p className="text-xs text-gray-400 mb-1 uppercase">{title}</p>
-        <p className={`text-sm font-semibold truncate ${highlight ? 'text-accent-cyan' : 'text-white'}`}>
+// Sub-komponen Detail (Diperbaiki agar text wrapping aman)
+const RecDetail = ({ icon, title, value, highlight = false }) => (
+    <div className="p-3 bg-dark-800 rounded-lg border border-dark-700/50 flex flex-col justify-center h-full">
+        <div className="flex items-center gap-1.5 mb-1">
+            {icon}
+            <p className="text-[10px] text-gray-500 uppercase tracking-wide font-bold">{title}</p>
+        </div>
+        {/* 'break-words' memastikan teks panjang turun ke bawah, tidak nabrak layout */}
+        <p className={`text-sm font-semibold break-words leading-tight ${highlight ? 'text-accent-cyan' : 'text-white'}`}>
             {value}
         </p>
     </div>

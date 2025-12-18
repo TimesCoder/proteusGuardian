@@ -2,15 +2,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import MaintenanceRecommendation from '../components/MaintenanceRecommendation';
+import TimeSeriesChart from '../components/TimeSeriesChart';
 import { useNavigate } from 'react-router-dom';
 import {
-    AlertTriangle, CheckCircle, Activity, Cpu, Loader2, X, FileText, CheckSquare, Square, Menu, User, Bot
+    AlertTriangle, CheckCircle, Activity, Cpu, Loader2, X, FileText, CheckSquare, Square, Menu, User, Bot, BarChart2, ChevronDown
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useMachineData } from '../hooks/useMachineData';
 import { CONFIG } from '../config';
 
-// --- API CONSTANTS ---
+// 1. IMPORT PENYIMPANAN BERSAMA
+import { globalManualTickets } from '../utils/sessionStore';
+
 const CREATE_TICKET_API_URL = `${CONFIG.API_BASE_URL}/api/data/tickets`;
 
 // --- UTILITY ---
@@ -24,19 +27,9 @@ const calculateMachineStats = (overviewData, tickets) => {
     return { totalMachines, machinesWithLiveAnomalies };
 };
 
-// --- KONSTANTA OPSI DROPDOWN ---
-const FAILURE_TYPES = [
-    "Power Failure",
-    "Tool Wear Failure",
-    "Overstrain Failure",
-    "Heat Dissipation Failure",
-    "Random Failure",
-    "Other"
-];
-
+const FAILURE_TYPES = ["Power Failure", "Tool Wear Failure", "Overstrain Failure", "Heat Dissipation Failure", "Random Failure", "Other"];
 const SEVERITY_LEVELS = ["WARNING", "CRITICAL"];
 
-// --- KOMPONEN KARTU KECIL ---
 const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
     <div className="bg-dark-800 p-5 rounded-xl border border-dark-700 relative overflow-hidden group hover:border-dark-600 transition-all duration-300">
         <div className="flex justify-between items-start mb-2">
@@ -50,41 +43,54 @@ const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
     </div>
 );
 
-// --- KOMPONEN UTAMA DASHBOARD ---
 const Dashboard = () => {
     const navigate = useNavigate();
-
-    // 1. MENGAMBIL DATA DARI HOOK
     const { data, loading, error, refreshData } = useMachineData();
 
+    // --- PERBAIKAN: PINDAHKAN DEFINISI DATA KE PALING ATAS ---
+    // Variabel ini harus didefinisikan SEBELUM digunakan oleh useEffect di bawah
     const safeData = data || { stats: {}, overview: [], tickets: [] };
     const stats = safeData.stats || {};
     const overview = safeData.overview || [];
-    const tickets = safeData.tickets || [];
+    const apiTickets = safeData.tickets || [];
 
-    const { totalMachines, machinesWithLiveAnomalies } = calculateMachineStats(overview, tickets);
+    // --- STATE ---
+    const [localManualTickets, setLocalManualTickets] = useState(globalManualTickets);
+    const [chartMachineId, setChartMachineId] = useState('');
 
-    // --- STATE LOCAL UNTUK STATUS SOLVED ---
+    // --- LOGIC CHART (Sekarang aman karena 'overview' sudah didefinisikan di atas) ---
+    useEffect(() => {
+        if (overview.length > 0 && !chartMachineId) {
+            setChartMachineId(overview[0].machine_id);
+        }
+    }, [overview, chartMachineId]);
+    
+    const selectedChartData = useMemo(() => {
+        return overview.find(m => m.machine_id === chartMachineId) || null;
+    }, [overview, chartMachineId]);
+
+    // --- PENGGABUNGAN DATA (API + MANUAL) ---
+    const allTickets = useMemo(() => {
+        return [...localManualTickets, ...apiTickets];
+    }, [localManualTickets, apiTickets]);
+
+    const { totalMachines, machinesWithLiveAnomalies } = calculateMachineStats(overview, allTickets);
     const [solvedTickets, setSolvedTickets] = useState(new Set());
 
-    // --- LOGIKA SORTING ---
     const recentAnomalies = useMemo(() => {
-        return [...tickets]
+        return [...allTickets]
             .sort((a, b) => {
-                if (b.id && a.id) return b.id - a.id;
+                if (b.id && a.id) return b.id - a.id; 
                 return new Date(b.timestamp) - new Date(a.timestamp);
             })
             .slice(0, 7);
-    }, [tickets]);
+    }, [allTickets]);
 
-    // 2. STATE MODAL & FORM
+    // --- MODAL STATE ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    
-    // State Form Manual Ticket
     const [selectedMachine, setSelectedMachine] = useState('');
-    // const [newReportTitle, setNewReportTitle] = useState(''); // DIHAPUS SESUAI REQUEST
-    const [selectedFailureType, setSelectedFailureType] = useState('Power Failure'); // Default diubah agar tidak 'Manual Inspection'
+    const [selectedFailureType, setSelectedFailureType] = useState('Power Failure');
     const [manualRUL, setManualRUL] = useState('');
     const [manualSeverity, setManualSeverity] = useState('WARNING'); 
 
@@ -95,111 +101,66 @@ const Dashboard = () => {
     }, [overview, selectedMachine]);
 
     useEffect(() => {
-        const intervalId = setInterval(() => {
-            refreshData(); 
-        }, 10000); 
+        const intervalId = setInterval(() => { refreshData(); }, 10000); 
         return () => clearInterval(intervalId);
     }, [refreshData]);
 
-    // --- HANDLER: TOGGLE SOLVE STATUS ---
     const handleToggleSolve = (e, ticketId) => {
         e.stopPropagation();
         setSolvedTickets(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(ticketId)) {
-                newSet.delete(ticketId);
-            } else {
-                newSet.add(ticketId);
-            }
+            if (newSet.has(ticketId)) newSet.delete(ticketId);
+            else newSet.add(ticketId);
             return newSet;
         });
     };
 
-    // --- HANDLER KHUSUS RUL AGAR TIDAK MINUS ---
     const handleRULChange = (e) => {
         const val = e.target.value;
-        // Jika kosong, biarkan kosong. Jika ada angka, pastikan >= 0
-        if (val === '' || parseFloat(val) >= 0) {
-            setManualRUL(val);
-        }
+        if (val === '' || parseFloat(val) >= 0) setManualRUL(val);
     };
 
-    // 3. LOGIKA CREATE TICKET
     const handleCreateTicket = async () => {
-        // Validasi input
         if (!selectedMachine || !manualRUL) {
-            return toast.error("Mohon pilih Mesin dan isi RUL!", {
-                style: { background: '#333', color: '#fff' }
-            });
+            return toast.error("Mohon pilih Mesin dan isi RUL!", { style: { background: '#333', color: '#fff' } });
         }
 
         setIsGenerating(true);
-        const loadingToast = toast.loading("Sedang membuat tiket laporan...", {
-            style: { background: '#1F2937', color: '#fff' }
-        });
+        const loadingToast = toast.loading("Membuat tiket...", { style: { background: '#1F2937', color: '#fff' } });
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         const selectedMachineData = overview.find(m => m.machine_id === selectedMachine);
+        const sensorData = selectedMachineData || { rpm: 0, torque_nm: 0, air_temp_k: 300 };
+        const airTempC = kelvinToCelsius(sensorData.air_temp_k);
 
-        if (!selectedMachineData) {
-            setIsGenerating(false);
-            return toast.error("Error: Data sensor mesin tidak ditemukan.", { id: loadingToast });
-        }
-
-        const airTempC = kelvinToCelsius(selectedMachineData.air_temp_k);
-
-        // UPDATE DATA PAYLOAD
         const newTicketData = {
+            id: Date.now(), 
             machine_id: selectedMachine,
+            timestamp: new Date().toISOString(),
             air_temp: parseFloat(airTempC.toFixed(1)),
-            rpm: selectedMachineData.rpm,
-            torque: selectedMachineData.torque_nm,
-            
-            // PENTING: Menggunakan failure_type dari dropdown agar nama di dashboard sesuai
-            failure_type: selectedFailureType, 
-            
-            confidence: 1.0,
-            predicted_rul: parseFloat(manualRUL),
+            rpm: sensorData.rpm,
+            torque: sensorData.torque_nm,
+            failure_type: selectedFailureType,
             risk_level: manualSeverity,
-            
-            // Analisis AI otomatis (karena deskripsi manual dihapus)
-            ai_analysis: `Manual Report Created. Issue: ${selectedFailureType}. Severity: ${manualSeverity}. Sensor Snapshot: RPM ${selectedMachineData.rpm}, Temp ${airTempC.toFixed(1)}°C.`,
+            predicted_rul: parseFloat(manualRUL),
+            confidence: 1.0,
+            ai_analysis: `Manual Report Created. Issue: ${selectedFailureType}. Severity: ${manualSeverity}. Sensor Snapshot: RPM ${sensorData.rpm}, Temp ${airTempC.toFixed(1)}°C.`
         };
 
-        try {
-            const response = await fetch(CREATE_TICKET_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTicketData),
-            });
+        // 3. SIMPAN KE GLOBAL STORE (Supaya Reports bisa lihat)
+        globalManualTickets.unshift(newTicketData);
+        
+        // Update State Dashboard agar langsung muncul
+        setLocalManualTickets([...globalManualTickets]);
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ detail: 'Unknown API Error' }));
-                throw new Error(errorBody.detail || `HTTP Error ${response.status}`);
-            }
-
-            // RESET FORM SETELAH SUKSES
-            setIsModalOpen(false);
-            setManualRUL('');
-            setManualSeverity('WARNING');
-            setSelectedFailureType('Power Failure');
-            
-            await refreshData();
-
-            toast.success("Tiket manual berhasil dibuat!", {
-                id: loadingToast,
-                duration: 3000,
-                icon: '✅',
-                style: { background: '#1F2937', color: '#fff', border: '1px solid #06B6D4' },
-            });
-
-        } catch (err) {
-            toast.error(`Gagal membuat laporan: ${err.message}`, {
-                id: loadingToast,
-                duration: 4000
-            });
-        } finally {
-            setIsGenerating(false);
-        }
+        setIsGenerating(false);
+        setIsModalOpen(false);
+        setManualRUL('');
+        
+        toast.success("Tiket manual berhasil dibuat!", {
+            id: loadingToast, duration: 3000, icon: '✅',
+            style: { background: '#1F2937', color: '#fff', border: '1px solid #06B6D4' },
+        });
     };
 
     if (loading && !stats) return <div className="flex flex-col justify-center items-center h-[80vh] text-white gap-3"><Loader2 className="animate-spin text-accent-cyan" size={40} /><p>Loading Dashboard...</p></div>;
@@ -208,8 +169,7 @@ const Dashboard = () => {
     return (
         <div className="space-y-4 md:space-y-6 pb-20 md:pb-10 relative px-1 md:px-0">
             <Toaster position="top-center" reverseOrder={false} />
-
-            {/* HEADER RESPONSIVE */}
+            {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-dark-800/50 md:bg-transparent p-4 md:p-0 rounded-xl md:rounded-none border border-dark-700 md:border-none">
                 <div>
                     <div className="flex items-center gap-3">
@@ -222,16 +182,13 @@ const Dashboard = () => {
                     <p className="text-gray-400 text-xs md:text-sm mt-1">Real-time monitoring Plant A-12</p>
                 </div>
                 <div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full md:w-auto px-4 py-2.5 bg-accent-cyan text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] flex justify-center items-center gap-2"
-                    >
+                    <button onClick={() => setIsModalOpen(true)} className="w-full md:w-auto px-4 py-2.5 bg-accent-cyan text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] flex justify-center items-center gap-2">
                         <FileText size={16} /> Create Ticket Manually
                     </button>
                 </div>
             </div>
 
-            {/* KPI CARDS */}
+            {/* KPI */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <StatCard title="Total Machines" value={totalMachines} subtext="Unit yang dipantau" icon={Cpu} color="text-accent-purple" />
                 <StatCard title="Critical Risk" value={stats.high_risk_count || 0} subtext="Tiket aktif, cek segera" icon={AlertTriangle} color="text-accent-danger" />
@@ -239,7 +196,7 @@ const Dashboard = () => {
                 <StatCard title="Avg RUL (Hours)" value={stats.avg_rul_all_tickets ? stats.avg_rul_all_tickets.toFixed(0) : 'N/A'} subtext="Rata-rata sisa umur mesin" icon={CheckCircle} color="text-accent-success" />
             </div>
 
-            {/* TABEL & SIDEBAR */}
+            {/* TABLE & SIDEBAR */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2 bg-dark-800 rounded-xl border border-dark-700 overflow-hidden shadow-lg flex flex-col h-full">
                     <div className="p-4 md:p-6 border-b border-dark-700 flex justify-between items-center bg-dark-800">
@@ -269,28 +226,19 @@ const Dashboard = () => {
                                                 <td className="px-4 py-3 md:px-6 md:py-4 font-mono text-white text-xs md:text-sm">#{index + 1}</td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4 font-mono text-accent-cyan font-semibold text-xs md:text-sm">{row.machine_id}</td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold border ${
-                                                        isManual 
-                                                            ? 'bg-blue-900/20 text-blue-400 border-blue-900/30' // Warna untuk Human
-                                                            : 'bg-purple-900/20 text-purple-400 border-purple-900/30' // Warna untuk AI
-                                                    }`}>
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold border ${isManual ? 'bg-blue-900/20 text-blue-400 border-blue-900/30' : 'bg-purple-900/20 text-purple-400 border-purple-900/30'}`}>
                                                         {isManual ? <User size={12} /> : <Bot size={12} />}
                                                         {isManual ? 'Human' : 'AI'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4 text-xs">
                                                     <div className="flex flex-col">
-                                                        <span className={`font-bold ${isSolved ? "line-through text-gray-600" : "text-white text-[14px]"}`}>
-                                                            {/* INI AKAN MENAMPILKAN PILIHAN DROPDOWN */}
-                                                            {row.failure_type} 
-                                                        </span>
+                                                        <span className={`font-bold ${isSolved ? "line-through text-gray-600" : "text-white text-[14px]"}`}>{row.failure_type}</span>
                                                         <span className="text-[12px] text-gray-200">{new Date(row.timestamp).toLocaleString()}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4">
-                                                    {!isSolved ? (
-                                                        <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold inline-block ${row.risk_level === 'CRITICAL' ? 'text-red-400 bg-red-900/20 border border-red-900/30' : row.risk_level === 'WARNING' ? 'text-yellow-400 bg-yellow-900/20 border border-yellow-900/30' : 'text-green-400 bg-green-900/20 border border-green-900/30'}`}>{row.risk_level}</span>
-                                                    ) : (<span className="px-2 py-1 rounded text-[10px] md:text-xs font-bold text-green-400 bg-green-900/20 flex items-center gap-1 w-fit"><CheckCircle size={12} /> SOLVED</span>)}
+                                                    <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold inline-block ${row.risk_level === 'CRITICAL' ? 'text-red-400 bg-red-900/20 border border-red-900/30' : row.risk_level === 'WARNING' ? 'text-yellow-400 bg-yellow-900/20 border border-yellow-900/30' : 'text-green-400 bg-green-900/20 border border-green-900/30'}`}>{row.risk_level}</span>
                                                 </td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4 text-base md:text-sm font-mono">{row.predicted_rul != null ? Number(row.predicted_rul).toFixed(0) + 'h' : 'N/A'}</td>
                                                 <td className="px-4 py-3 md:px-6 md:py-4 text-center">
@@ -299,16 +247,60 @@ const Dashboard = () => {
                                             </tr>
                                         );
                                     })
-                                ) : (<tr><td colSpan="6" className="px-6 py-12 text-center text-gray-500">No recent anomaly tickets found.</td></tr>)}
+                                ) : (<tr><td colSpan="7" className="px-6 py-12 text-center text-gray-500">No recent anomaly tickets found.</td></tr>)}
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div className="flex flex-col gap-6">
                     <MaintenanceRecommendation />
-                    <div className="bg-dark-800 p-6 rounded-xl border border-dark-700 shadow-lg">
-                        <div className="flex items-center gap-2 mb-4"><Activity className="text-gray-400" size={20} /><h3 className="font-bold text-white">Time Series Snapshot</h3></div>
-                        <div className="h-32 rounded-lg bg-dark-900/50 border border-dark-600 border-dashed flex flex-col items-center justify-center text-center p-4"><p className="text-gray-500 text-sm">Grafik historis live tidak ditampilkan (Versi Demo).</p></div>
+                    <div className="bg-dark-800 p-5 rounded-xl border border-dark-700 shadow-lg flex flex-col h-[350px]"> {/* Set Fixed Height */}
+                        
+                        {/* Header Chart dengan Dropdown */}
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-dark-700 rounded-lg">
+                                    <BarChart2 className="text-accent-cyan" size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-white text-sm">Live Sensor Trend</h3>
+                                    <p className="text-[10px] text-gray-400">Temp vs Torque (Last 1 Hour)</p>
+                                </div>
+                            </div>
+
+                            {/* Dropdown Mini untuk Pilih Mesin */}
+                            <div className="relative">
+                                <select 
+                                    value={chartMachineId} 
+                                    onChange={(e) => setChartMachineId(e.target.value)}
+                                    className="bg-dark-900 border border-dark-600 text-white text-xs rounded-lg px-2 py-1 pr-6 focus:outline-none focus:border-accent-cyan appearance-none cursor-pointer"
+                                >
+                                    {overview.map(m => (
+                                        <option key={m.machine_id} value={m.machine_id}>{m.machine_id}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={12} className="absolute right-2 top-1.5 text-gray-400 pointer-events-none"/> 
+                            </div>
+                        </div>
+
+                        {/* AREA CHART */}
+                        <div className="flex-1 w-full min-h-0 bg-dark-900/30 rounded-xl border border-dark-700/50 p-2 relative overflow-hidden">
+                            {/* PANGGIL COMPONENT CHART DISINI */}
+                            <TimeSeriesChart machineData={selectedChartData} />
+                        </div>
+                        
+                        {/* Legend Kecil */}
+                        <div className="flex justify-center gap-4 mt-3">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Temperature</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Torque (Nm)</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -369,8 +361,6 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* BAGIAN DESKRIPSI DIHAPUS DISINI */}
                             
                             <div className="bg-blue-900/20 border border-blue-900/30 p-3 rounded-lg">
                                 <p className="text-xs text-blue-200 flex gap-2"><Activity size={14} className="shrink-0 mt-0.5" />Note: Creating a manual ticket logs the current live sensor data as a snapshot.</p>

@@ -348,7 +348,7 @@ const MachineDetail = () => {
                                     {ticket.failure_type}
                                 </p>
                                 <p className="text-xs text-gray-500 truncate">
-                                    {ticket.ai_analysis ? ticket.ai_analysis.substring(0, 50) : "No analysis"}...
+                                    {ticket.ai_analysis ? ticket.recommendation.substring(0, 50) : "No analysis"}...
                                 </p>
                             </div>
                         ))}

@@ -9,6 +9,7 @@ import MachineDetail from './pages/MachineDetail';
 import Reports from './pages/Reports';
 import MachineFleet from './pages/MachineFleet';
 import Settings from './pages/Settings'; 
+import Charts from './pages/Chart';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/chat" element={<Chatbot />} />
           <Route path="/machine/:id" element={<MachineDetail />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/charts" element={<Charts />} />
           <Route path="/settings" element={<Settings />} />
           
         </Routes>

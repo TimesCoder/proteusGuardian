@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart2 // <--- 1. IMPORT ICON BARU DISINI
 } from 'lucide-react';
 
 const MainLayout = ({ children }) => {
@@ -52,25 +53,25 @@ const MainLayout = ({ children }) => {
         `}
       >
         {/* HEADER SIDEBAR (Logo & Toggle) */}
-        {/* PERBAIKAN DI SINI: Logo dipisah dari Text agar tetap muncul */}
         <div 
-  className={`
-    h-16 flex items-center border-b border-dark-700/50 transition-all duration-300
-    ${isDesktopCollapsed ? 'justify-center px-0' : 'justify-start px-4'}
-  `}
->
-  
-  <div 
-    className={`
-      flex items-center overflow-hidden whitespace-nowrap transition-all duration-300
-      ${isDesktopCollapsed ? 'gap-0' : 'gap-3'}
-    `}
-  >
-    
-    {/* 1. GAMBAR LOGO */}
-    <div className="w-8 h-8 shrink-0 bg-accent-cyan rounded-lg flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20">
-      <img src="/Logo.svg" alt="Logo" className="w-full h-full object-contain" />
-    </div>
+          className={`
+            h-16 flex items-center border-b border-dark-700/50 transition-all duration-300
+            ${isDesktopCollapsed ? 'justify-center px-0' : 'justify-start px-4'}
+          `}
+        >
+          
+          <div 
+            className={`
+              flex items-center overflow-hidden whitespace-nowrap transition-all duration-300
+              ${isDesktopCollapsed ? 'gap-0' : 'gap-3'}
+            `}
+          >
+            
+            {/* 1. GAMBAR LOGO */}
+            <div className="w-8 h-8 shrink-0 bg-accent-cyan rounded-lg flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20">
+              <img src="/Logo.svg" alt="Logo" className="w-full h-full object-contain" />
+            </div>
+
             {/* 2. TEKS JUDUL (Hilang saat Collapsed) */}
             <span 
               className={`font-bold text-lg tracking-wide transition-all duration-300 ${
@@ -107,6 +108,17 @@ const MainLayout = ({ children }) => {
             isActive={location.pathname === '/fleet'}
             collapsed={isDesktopCollapsed}
           />
+          
+          {/* --- MENU BARU DITAMBAHKAN DISINI --- */}
+          <NavItem 
+            to="/charts" 
+            icon={BarChart2} 
+            label="Analytics" 
+            isActive={location.pathname === '/charts'}
+            collapsed={isDesktopCollapsed}
+          />
+          {/* ------------------------------------ */}
+
           <NavItem 
             to="/chat" 
             icon={MessageSquare} 
@@ -147,7 +159,7 @@ const MainLayout = ({ children }) => {
       {/* --- 3. MAIN CONTENT --- */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* MOBILE HEADER */}
-        <header className="md:hidden h-16 bg-dark-800 border-b bord er-dark-700 flex items-center px-4 justify-between shrink-0">
+        <header className="md:hidden h-16 bg-dark-800 border-b border-dark-700 flex items-center px-4 justify-between shrink-0">
           <button onClick={() => setIsMobileOpen(true)} className="text-gray-300">
             <Menu size={24} />
           </button>
@@ -190,7 +202,7 @@ const NavItem = ({ to, icon: Icon, label, isActive, collapsed }) => {
 
       {/* Tooltip Hover saat Collapsed */}
       {collapsed && (
-        <div className="absolute left-14 bg-dark-700 text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-dark-600 shadow-xl">
+        <div className="absolute left-14 bg-dark-700 text-white text-xs px-2 py-1 rounded opacity-0 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-dark-600 shadow-xl ">
           {label}
         </div>
       )}

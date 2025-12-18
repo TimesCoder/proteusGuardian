@@ -135,15 +135,15 @@ const Charts = () => {
       const pageHeight = doc.internal.pageSize.getHeight();
       
       // Header
-      doc.setFillColor(6, 182, 212); 
+      doc.setFillColor(31, 41, 55); 
       doc.rect(0, 0, pageWidth, 25, 'F'); 
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(22);
-      doc.text("EXECUTIVE ANALYTICS REPORT", 15, 17);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.text("PROTEUS GUARDIAN ANALYTICS REPORT", 11, 15);
       
       doc.setFontSize(10); doc.setFont("helvetica", "normal");
-      doc.text("Proteus Guardian AI", pageWidth - 15, 12, { align: "right" });
-      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 15, 18, { align: "right" });
+      doc.text("Proteus Guardian AI", pageWidth - 15, 17, { align: "right" });
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth - 15, 22, { align: "right" });
 
       // Body Text
       let yPos = 40;
@@ -169,8 +169,77 @@ const Charts = () => {
 
       if (yPos + pdfHeight > pageHeight - 20) { doc.addPage(); yPos = 20; }
       doc.addImage(imgData, 'PNG', 15, yPos, pdfWidth, pdfHeight);
+
+      yPos += pdfHeight + 15;
+
+      // 4. SUMMARY TEXT OTOMATIS
+      // Cek halaman cukup gak buat text summary
+      if (yPos + 30 > pageHeight - 20) {
+        doc.addPage();
+        yPos = 20;
+      }
       
-      doc.save(`Proteus_Live_Report_${Date.now()}.pdf`);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const summaryContent = `This document serves as an official record of machine health status. Based on the AI analysis, immediate attention is required for critical assets to prevent downtime. The data visualization above reflects the real-time telemetry captured from the IoT sensor grid.`;
+      
+      const splitText = doc.splitTextToSize(summaryContent, pageWidth - 30);
+      doc.text(splitText, 15, yPos);
+      
+      // Update yPos berdasarkan tinggi teks summary
+      yPos += (splitText.length * 5) + 10;
+
+      // ---------------------------------------------------------
+      // 5. SIGNATURE SECTION (TANDA TANGAN) - BARU DITAMBAHKAN
+      // ---------------------------------------------------------
+      
+      // Cek apakah sisa halaman cukup untuk tanda tangan (butuh sekitar 40mm)
+      // Jika tidak cukup, buat halaman baru
+      if (yPos + 40 > pageHeight - 20) {
+        doc.addPage();
+        yPos = 40; // Kasih jarak atas kalau halaman baru
+      } else {
+        yPos += 10; // Kasih jarak dari text sebelumnya
+      }
+
+      const sigWidth = 60; // Lebar area tanda tangan
+      const rightMargin = 15;
+      
+      // Posisi X dimulai dari: LebarKertas - MarginKanan - LebarTandaTangan
+      const xSigStart = pageWidth - rightMargin - sigWidth;
+      const xSigCenter = xSigStart + (sigWidth / 2); // Titik tengah untuk text align center
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text("Jakarta, " + new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}), xSigCenter, yPos, { align: "center" });
+      
+      yPos += 5;
+      doc.text("Approved By,", xSigCenter, yPos, { align: "center" });
+      
+      yPos += 25; // Ruang kosong untuk tanda tangan basah
+
+      doc.setLineWidth(0.5);
+      doc.line(xSigStart, yPos, pageWidth - rightMargin, yPos); // Garis bawah nama
+      
+      yPos += 5;
+      doc.setFont("helvetica", "bold");
+      doc.text("(  Head of Maintenance  )", xSigCenter, yPos, { align: "center" });
+      
+      // ---------------------------------------------------------
+      // END SIGNATURE SECTION
+      // ---------------------------------------------------------
+
+      // 6. FOOTER (Nomor Halaman)
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(150);
+        doc.text(`Page ${i} of ${totalPages} | Confidential Document - Proteus Guardian`, pageWidth / 2, pageHeight - 10, { align: "center" });
+      }
+      
+      doc.save(`Proteus_Live_Report_Generated_at_${new Date().toLocaleDateString().replace(/[:/]/g, '-')}.pdf`);
       toast.success("Laporan Berhasil!", { id: toastId });
     } catch (error) {
       console.error(error);

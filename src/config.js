@@ -4,7 +4,7 @@
 // Default mengarah ke Server DigitalOcean.
 // Jika ingin run lokal, buat file .env di root frontend dengan isi: VITE_API_BASE_URL=http://localhost:8000
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://copilot-nwt2l.ondigitalocean.app';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://predictive-maintenance-copilot-production.up.railway.app';
 
 export const CONFIG = {
     API_BASE_URL: API_BASE_URL,

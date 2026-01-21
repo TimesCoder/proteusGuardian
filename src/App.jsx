@@ -25,10 +25,14 @@ import Settings from "./pages/Settings";
 import Charts from "./pages/Chart";
 
 const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth(); 
+  const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-dark-900 text-white">Loading...</div>; 
+    return (
+      <div className="flex h-screen items-center justify-center bg-dark-900 text-white">
+        Loading...
+      </div>
+    );
   }
 
   if (!currentUser) {
@@ -40,7 +44,7 @@ const ProtectedRoute = ({ children }) => {
 const App = () => {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
